@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from "react";
-import { gerarDemoData, formatarHora } from "./utils";
+import { formatarHora } from "./utils";
 import { CORES } from "./constants";
 import Modal from "./Modal";
 import Coluna from "./Coluna";
@@ -8,8 +9,10 @@ import Toast from "./Toast";
 import { IconTruck, IconClock, IconCheck, IconAlert, IconPlus } from "./Icons";
 import "./styles.css";
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
 export default function App() {
-  const [entregas, setEntregas] = useState(() => gerarDemoData());
+  const [entregas, setEntregas] = useState([]);
   const [relogio, setRelogio] = useState(new Date().toLocaleTimeString("pt-BR"));
   const [modalAberto, setModalAberto] = useState(false);
   const [toasts, setToasts] = useState([]);
@@ -17,6 +20,20 @@ export default function App() {
   useEffect(() => {
     const t = setInterval(() => setRelogio(new Date().toLocaleTimeString("pt-BR")), 1000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_URL}/entregas`)
+      .then(r => r.json())
+      .then(list => {
+        const parsed = list.map(e => ({
+          ...e,
+          horaoPrevisto: e.horaoPrevisto ? new Date(e.horaoPrevisto) : null,
+          horarioConclusao: e.horarioConclusao ? new Date(e.horarioConclusao) : null,
+        }));
+        setEntregas(parsed);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -41,16 +58,36 @@ export default function App() {
 
   const confirmarEntrega = useCallback((eid) => {
     const agora = new Date();
-    setEntregas(prev => prev.map(e =>
-      e.id === eid ? { ...e, status: "entregue", horarioConclusao: agora } : e
-    ));
-    addToast(`Entrega ${eid} concluída às ${formatarHora(agora)}!`, true);
+    fetch(`${API_URL}/entregas/${eid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'entregue', horarioConclusao: agora }),
+    })
+      .then(r => r.json())
+      .then(updated => {
+        updated.horaoPrevisto = updated.horaoPrevisto ? new Date(updated.horaoPrevisto) : null;
+        updated.horarioConclusao = updated.horarioConclusao ? new Date(updated.horarioConclusao) : null;
+        setEntregas(prev => prev.map(e => e.id === eid ? updated : e));
+        addToast(`Entrega ${eid} concluída às ${formatarHora(agora)}!`, true);
+      })
+      .catch(() => addToast('Erro ao confirmar entrega', false));
   }, [addToast]);
 
   const salvarEntrega = useCallback((nova) => {
-    setEntregas(prev => [nova, ...prev]);
-    setModalAberto(false);
-    addToast(`Entrega ${nova.id} registrada!`, true);
+    fetch(`${API_URL}/entregas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(nova),
+    })
+      .then(r => r.json())
+      .then(created => {
+        created.horaoPrevisto = created.horaoPrevisto ? new Date(created.horaoPrevisto) : null;
+        created.horarioConclusao = created.horarioConclusao ? new Date(created.horarioConclusao) : null;
+        setEntregas(prev => [created, ...prev]);
+        setModalAberto(false);
+        addToast(`Entrega ${created.id} registrada!`, true);
+      })
+      .catch(() => addToast('Erro ao registrar entrega', false));
   }, [addToast]);
 
   const caminho = entregas.filter(e => e.status === "caminho");
