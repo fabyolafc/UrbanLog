@@ -7,7 +7,11 @@ const entregasRouter = require('./routes/entregas');
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
 
-app.use(cors({ origin: ['https://urban-log.vercel.app'] }));
+app.use(cors({
+  origin: "https://urban-log.vercel.app",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 app.use(express.json());
 
 app.use('/entregas', entregasRouter);
