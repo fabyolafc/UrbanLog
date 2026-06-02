@@ -9,7 +9,7 @@ import Toast from "./Toast";
 import { IconTruck, IconClock, IconCheck, IconAlert, IconPlus } from "./Icons";
 import "./styles.css";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://urbanlog.onrender.com';
 
 export default function App() {
   const [entregas, setEntregas] = useState([]);
