@@ -2,14 +2,17 @@ import React, { useState } from "react";
 import { gerarId } from "./utils";
 import { CORES } from "./constants";
 
-export default function Modal({ onClose, onSalvar }) {
+export default function Modal({ onClose, onSalvar, entrega }) {
   const agora = new Date();
   agora.setMinutes(agora.getMinutes() + 45);
+  const inicialHorario = entrega?.horaoPrevisto
+    ? new Date(entrega.horaoPrevisto).toTimeString().slice(0, 5)
+    : agora.toTimeString().slice(0, 5);
   const [form, setForm] = useState({
-    id: gerarId(),
-    entregador: "",
-    destino: "",
-    horario: agora.toTimeString().slice(0, 5),
+    id: entrega?.id || gerarId(),
+    entregador: entrega?.entregador || "",
+    destino: entrega?.destino || "",
+    horario: inicialHorario,
   });
   const [btnHover, setBtnHover] = useState(false);
   const [cancelHover, setCancelHover] = useState(false);
@@ -21,14 +24,20 @@ export default function Modal({ onClose, onSalvar }) {
     const [h, m] = form.horario.split(":").map(Number);
     const prev = new Date();
     prev.setHours(h, m, 0, 0);
+    const status = entrega?.horarioConclusao
+      ? "entregue"
+      : new Date() > prev
+      ? "atrasada"
+      : "caminho";
+
     onSalvar({
-      id: form.id || gerarId(),
+      id: form.id,
       entregador: form.entregador,
       destino: form.destino,
       horaoPrevisto: prev,
       horarioTexto: form.horario,
-      status: new Date() > prev ? "atrasada" : "caminho",
-      horarioConclusao: null,
+      status,
+      horarioConclusao: entrega?.horarioConclusao || null,
     });
   };
 
@@ -74,7 +83,7 @@ export default function Modal({ onClose, onSalvar }) {
           display: "flex", alignItems: "center", gap: 10,
         }}>
           <span style={{ width: 6, height: 24, background: CORES.laranja, borderRadius: 3, display: "inline-block" }} />
-          Registrar nova entrega
+          {entrega ? 'Editar entrega' : 'Registrar nova entrega'}
         </div>
 
         {[
@@ -107,34 +116,12 @@ export default function Modal({ onClose, onSalvar }) {
           />
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-          <button
-            onMouseEnter={() => setCancelHover(true)}
-            onMouseLeave={() => setCancelHover(false)}
-            onClick={onClose}
-            style={{
-              flex: 1, background: cancelHover ? "#E8EEF4" : "#F0F4F8",
-              border: "1px solid rgba(13,31,60,.12)",
-              borderRadius: 7, padding: 10,
-              fontSize: 14, fontWeight: 500, color: "#556677",
-              cursor: "pointer", transition: "all .2s", fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
+        <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
+          <button className="btn btn-secondary" style={{ flex: 1, minWidth: 120 }} onClick={onClose}>
             Cancelar
           </button>
-          <button
-            onMouseEnter={() => setBtnHover(true)}
-            onMouseLeave={() => setBtnHover(false)}
-            onClick={handleSalvar}
-            style={{
-              flex: 2,
-              background: btnHover ? CORES.azulMid : CORES.azul,
-              border: "none", borderRadius: 7, padding: 10,
-              fontSize: 14, fontWeight: 500, color: "#fff",
-              cursor: "pointer", transition: "all .2s", fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            Registrar entrega
+          <button className="btn btn-primary" style={{ flex: 2, minWidth: 160 }} onClick={handleSalvar}>
+            {entrega ? 'Salvar mudanças' : 'Registrar entrega'}
           </button>
         </div>
       </div>

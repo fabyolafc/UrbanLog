@@ -37,4 +37,17 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const entrega = await Entrega.findByPk(id);
+    if (!entrega) return res.status(404).json({ error: 'not found' });
+    await entrega.destroy();
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: 'invalid delete' });
+  }
+});
+
 module.exports = router;

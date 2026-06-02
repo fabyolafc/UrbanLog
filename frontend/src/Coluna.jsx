@@ -3,7 +3,7 @@ import { IconClock, IconAlert, IconCheck, IconBox } from "./Icons";
 import EntregaCard from "./EntregaCard";
 import { CORES } from "./constants";
 
-export default function Coluna({ titulo, tipo, entregas, onConfirmar }) {
+export default function Coluna({ titulo, tipo, entregas, onConfirmar, onEditar, onExcluir }) {
   const configs = {
     caminho: { cor: CORES.azulLight, bg: "rgba(43,79,138,.08)", badgeBg: CORES.azulLight },
     atrasada: { cor: CORES.laranja, bg: "rgba(242,100,25,.08)", badgeBg: CORES.laranja },
@@ -64,7 +64,13 @@ export default function Coluna({ titulo, tipo, entregas, onConfirmar }) {
         </div>
       ) : (
         entregas.map(e => (
-          <EntregaCard key={e.id} entrega={e} onConfirmar={onConfirmar} />
+          <EntregaCard
+            key={e.id}
+            entrega={e}
+            onConfirmar={onConfirmar}
+            onEditar={onEditar}
+            onExcluir={onExcluir}
+          />
         ))
       )}
     </div>

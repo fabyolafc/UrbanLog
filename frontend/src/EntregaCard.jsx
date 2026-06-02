@@ -3,11 +3,10 @@ import { IconUser, IconPin, IconCheck } from "./Icons";
 import { CORES } from "./constants";
 import { formatarHora, calcAtraso } from "./utils";
 
-export default function EntregaCard({ entrega, onConfirmar }) {
+export default function EntregaCard({ entrega, onConfirmar, onEditar, onExcluir }) {
   const atrasada = entrega.status === "atrasada";
   const entregue = entrega.status === "entregue";
   const [hover, setHover] = useState(false);
-  const [btnHover, setBtnHover] = useState(false);
 
   return (
     <div
@@ -30,7 +29,7 @@ export default function EntregaCard({ entrega, onConfirmar }) {
         animation: "entrar .3s ease",
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10, gap: 12, flexWrap: "wrap" }}>
         <span style={{
           fontFamily: "'DM Mono', monospace",
           fontSize: 13,
@@ -40,21 +39,29 @@ export default function EntregaCard({ entrega, onConfirmar }) {
         }}>
           {entrega.id}
         </span>
-        {atrasada && (
-          <span style={{
-            background: "rgba(242,100,25,.12)",
-            color: CORES.laranja,
-            fontSize: 10,
-            fontWeight: 500,
-            padding: "3px 8px",
-            borderRadius: 20,
-            fontFamily: "'DM Mono', monospace",
-            animation: "piscar 1.5s ease-in-out infinite",
-            whiteSpace: "nowrap",
-          }}>
-            {calcAtraso(entrega.horaoPrevisto)}
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {!entregue && (
+            <button className="btn btn-success" onClick={() => onConfirmar(entrega.id)}>
+              <IconCheck size={11} />
+              Confirmar
+            </button>
+          )}
+          {atrasada && (
+            <span style={{
+              background: "rgba(242,100,25,.12)",
+              color: CORES.laranja,
+              fontSize: 10,
+              fontWeight: 500,
+              padding: "3px 8px",
+              borderRadius: 20,
+              fontFamily: "'DM Mono', monospace",
+              animation: "piscar 1.5s ease-in-out infinite",
+              whiteSpace: "nowrap",
+            }}>
+              {calcAtraso(entrega.horaoPrevisto)}
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -76,13 +83,15 @@ export default function EntregaCard({ entrega, onConfirmar }) {
         marginTop: 12,
         paddingTop: 10,
         borderTop: "1px solid rgba(13,31,60,.08)",
+        flexWrap: "wrap",
+        gap: 10,
       }}>
-        {entregue ? (
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: CORES.verde }}>
-            ✓ {formatarHora(entrega.horarioConclusao)}
-          </span>
-        ) : (
-          <>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {entregue ? (
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: CORES.verde }}>
+              ✓ {formatarHora(entrega.horarioConclusao)}
+            </span>
+          ) : (
             <span style={{
               fontFamily: "'DM Mono', monospace",
               fontSize: 12,
@@ -91,31 +100,16 @@ export default function EntregaCard({ entrega, onConfirmar }) {
             }}>
               {entrega.horarioTexto}
             </span>
-            <button
-              onMouseEnter={() => setBtnHover(true)}
-              onMouseLeave={() => setBtnHover(false)}
-              onClick={() => onConfirmar(entrega.id)}
-              style={{
-                background: btnHover ? CORES.verde : "transparent",
-                border: `1px solid ${CORES.verde}`,
-                color: btnHover ? "#fff" : CORES.verde,
-                borderRadius: 6,
-                padding: "5px 12px",
-                fontSize: 11,
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                transition: "all .2s",
-              }}
-            >
-              <IconCheck size={11} />
-              Confirmar
-            </button>
-          </>
-        )}
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-secondary" onClick={() => onEditar && onEditar(entrega)}>
+            Editar
+          </button>
+          <button className="btn btn-danger" onClick={() => onExcluir && onExcluir(entrega.id)}>
+            Excluir
+          </button>
+        </div>
       </div>
     </div>
   );

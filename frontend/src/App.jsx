@@ -15,6 +15,7 @@ export default function App() {
   const [entregas, setEntregas] = useState([]);
   const [relogio, setRelogio] = useState(new Date().toLocaleTimeString("pt-BR"));
   const [modalAberto, setModalAberto] = useState(false);
+  const [entregaEditando, setEntregaEditando] = useState(null);
   const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
@@ -56,6 +57,63 @@ export default function App() {
     setToasts(t => t.filter(x => x.id !== id));
   }, []);
 
+  const abrirModal = useCallback((entrega = null) => {
+    setEntregaEditando(entrega);
+    setModalAberto(true);
+  }, []);
+
+  const fecharModal = useCallback(() => {
+    setModalAberto(false);
+    setEntregaEditando(null);
+  }, []);
+
+  const salvarEntrega = useCallback((nova) => {
+    const editingId = entregaEditando?.id;
+    const isEdit = Boolean(editingId);
+    if (isEdit) {
+      fetch(`${API_URL}/entregas/${editingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nova),
+      })
+        .then(r => r.json())
+        .then(updated => {
+          updated.horaoPrevisto = updated.horaoPrevisto ? new Date(updated.horaoPrevisto) : null;
+          updated.horarioConclusao = updated.horarioConclusao ? new Date(updated.horarioConclusao) : null;
+          setEntregas(prev => prev.map(e => e.id === updated.id ? updated : e));
+          fecharModal();
+          addToast(`Entrega ${updated.id} atualizada!`, true);
+        })
+        .catch(() => addToast('Erro ao atualizar entrega', false));
+      return;
+    }
+
+    fetch(`${API_URL}/entregas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(nova),
+    })
+      .then(r => r.json())
+      .then(created => {
+        created.horaoPrevisto = created.horaoPrevisto ? new Date(created.horaoPrevisto) : null;
+        created.horarioConclusao = created.horarioConclusao ? new Date(created.horarioConclusao) : null;
+        setEntregas(prev => [created, ...prev]);
+        fecharModal();
+        addToast(`Entrega ${created.id} registrada!`, true);
+      })
+      .catch(() => addToast('Erro ao registrar entrega', false));
+  }, [addToast, entregaEditando, fecharModal]);
+
+  const excluirEntrega = useCallback((eid) => {
+    fetch(`${API_URL}/entregas/${eid}`, { method: 'DELETE' })
+      .then((res) => {
+        if (!res.ok) throw new Error('delete failed');
+        setEntregas(prev => prev.filter(e => e.id !== eid));
+        addToast(`Entrega ${eid} excluída!`, true);
+      })
+      .catch(() => addToast('Erro ao excluir entrega', false));
+  }, [addToast]);
+
   const confirmarEntrega = useCallback((eid) => {
     const agora = new Date();
     fetch(`${API_URL}/entregas/${eid}`, {
@@ -73,23 +131,6 @@ export default function App() {
       .catch(() => addToast('Erro ao confirmar entrega', false));
   }, [addToast]);
 
-  const salvarEntrega = useCallback((nova) => {
-    fetch(`${API_URL}/entregas`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(nova),
-    })
-      .then(r => r.json())
-      .then(created => {
-        created.horaoPrevisto = created.horaoPrevisto ? new Date(created.horaoPrevisto) : null;
-        created.horarioConclusao = created.horarioConclusao ? new Date(created.horarioConclusao) : null;
-        setEntregas(prev => [created, ...prev]);
-        setModalAberto(false);
-        addToast(`Entrega ${created.id} registrada!`, true);
-      })
-      .catch(() => addToast('Erro ao registrar entrega', false));
-  }, [addToast]);
-
   const caminho = entregas.filter(e => e.status === "caminho");
   const atrasadas = entregas.filter(e => e.status === "atrasada");
   const entregues = entregas.filter(e => e.status === "entregue");
@@ -99,30 +140,19 @@ export default function App() {
   return (
     <>
       {/* Header */}
-      <header style={{
-        background: CORES.azul, padding: "0 28px", height: 56,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        position: "sticky", top: 0, zIndex: 100,
-      }}>
-        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: "#fff", letterSpacing: "-.5px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 8, height: 8, background: CORES.laranja, borderRadius: "50%", animation: "pulsar 2s ease-in-out infinite" }} />
-          UrbanLog
+      <header className="appHeader">
+        <div className="appHeaderBrand">
+          <img src="/logo.png" alt="UrbanLon" className="headerLogo" />
+          <div className="appHeaderBrandTitle">
+            <div className="brandPulse" />
+            UrbanLog
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: "rgba(255,255,255,.5)", letterSpacing: 1 }}>
+        <div className="appHeaderActions">
+          <span className="appHeaderClock">
             {relogio}
           </span>
-          <button
-            onClick={() => setModalAberto(true)}
-            style={{
-              background: CORES.laranja, color: "#fff", border: "none", borderRadius: 6,
-              padding: "8px 16px", fontFamily: "'DM Sans', sans-serif", fontWeight: 500,
-              fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-              transition: "background .2s",
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = CORES.laranjaLight}
-            onMouseLeave={e => e.currentTarget.style.background = CORES.laranja}
-          >
+          <button className="btn btn-primary" onClick={() => abrirModal()}>
             <IconPlus />
             Nova entrega
           </button>
@@ -130,22 +160,18 @@ export default function App() {
       </header>
 
       {/* Progresso */}
-      <div style={{ padding: "16px 28px 0" }}>
-        <div style={{ height: 4, background: "rgba(13,31,60,.1)", borderRadius: 4, overflow: "hidden" }}>
-          <div style={{
-            height: "100%", borderRadius: 4,
-            background: `linear-gradient(90deg, ${CORES.azulLight}, ${CORES.verde})`,
-            width: pct + "%", transition: "width .6s ease",
-          }} />
+      <div className="progressSection">
+        <div className="progressTrack">
+          <div className="progressFill" style={{ "--fill-width": pct + "%" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, color: "#556677" }}>
+        <div className="progressInfo">
           <span>Progresso do dia</span>
           <span>{entregues.length} de {total} entregue{entregues.length !== 1 ? "s" : ""}</span>
         </div>
       </div>
 
       {/* Métricas */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, padding: "16px 28px 0" }}>
+      <div className="metricsGrid">
         <MetricaCard label="Total hoje" valor={total} cor={CORES.azul} iconBg="rgba(136,153,170,.12)" icon={<IconTruck size={18} color="#556677" />} />
         <MetricaCard label="A caminho" valor={caminho.length} cor={CORES.azulLight} iconBg="rgba(43,79,138,.1)" icon={<IconClock size={18} color={CORES.azulLight} />} />
         <MetricaCard label="Entregue" valor={entregues.length} cor={CORES.verde} iconBg="rgba(39,174,96,.12)" icon={<IconCheck size={18} color={CORES.verde} />} />
@@ -153,17 +179,17 @@ export default function App() {
       </div>
 
       {/* Painel */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, padding: "20px 28px 32px" }}>
-        <Coluna titulo="A caminho" tipo="caminho" entregas={caminho} onConfirmar={confirmarEntrega} />
-        <Coluna titulo="Atrasadas" tipo="atrasada" entregas={atrasadas} onConfirmar={confirmarEntrega} />
-        <Coluna titulo="Entregue" tipo="entregue" entregas={entregues} onConfirmar={confirmarEntrega} />
+      <div className="panelGrid">
+        <Coluna titulo="A caminho" tipo="caminho" entregas={caminho} onConfirmar={confirmarEntrega} onEditar={abrirModal} onExcluir={excluirEntrega} />
+        <Coluna titulo="Atrasadas" tipo="atrasada" entregas={atrasadas} onConfirmar={confirmarEntrega} onEditar={abrirModal} onExcluir={excluirEntrega} />
+        <Coluna titulo="Entregue" tipo="entregue" entregas={entregues} onConfirmar={confirmarEntrega} onEditar={abrirModal} onExcluir={excluirEntrega} />
       </div>
 
       {/* Modal */}
-      {modalAberto && <Modal onClose={() => setModalAberto(false)} onSalvar={salvarEntrega} />}
+      {modalAberto && <Modal entrega={entregaEditando} onClose={fecharModal} onSalvar={salvarEntrega} />}
 
       {/* Toasts */}
-      <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 999, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="toastWrapper">
         {toasts.map(t => (
           <Toast key={t.id} msg={t.msg} sucesso={t.sucesso} onDone={() => removeToast(t.id)} />
         ))}
