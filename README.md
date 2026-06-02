@@ -6,9 +6,8 @@ A UrbanLog é uma plataforma de logística urbana desenvolvida para fornecer vis
 
 ## 🔗 Deploy
 
-### Frontend: https://urbanlog.onrender.com
-
-### Backend: https://urban-log.vercel.app/
+**Frontend:** https://urbanlog.onrender.com
+**Backend:** https://urban-log.vercel.app/
 
 ## 📌 Problema
 
