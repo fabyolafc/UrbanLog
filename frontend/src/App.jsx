@@ -76,7 +76,11 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nova),
       })
-        .then(r => r.json())
+        .then(async (r) => {
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || 'Erro ao atualizar entrega');
+          return data;
+        })
         .then(updated => {
           updated.horaoPrevisto = updated.horaoPrevisto ? new Date(updated.horaoPrevisto) : null;
           updated.horarioConclusao = updated.horarioConclusao ? new Date(updated.horarioConclusao) : null;
@@ -84,7 +88,7 @@ export default function App() {
           fecharModal();
           addToast(`Entrega ${updated.id} atualizada!`, true);
         })
-        .catch(() => addToast('Erro ao atualizar entrega', false));
+        .catch((err) => addToast(`Erro ao atualizar entrega: ${err.message}`, false));
       return;
     }
 
@@ -93,7 +97,11 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(nova),
     })
-      .then(r => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Erro ao registrar entrega');
+        return data;
+      })
       .then(created => {
         created.horaoPrevisto = created.horaoPrevisto ? new Date(created.horaoPrevisto) : null;
         created.horarioConclusao = created.horarioConclusao ? new Date(created.horarioConclusao) : null;
@@ -101,7 +109,7 @@ export default function App() {
         fecharModal();
         addToast(`Entrega ${created.id} registrada!`, true);
       })
-      .catch(() => addToast('Erro ao registrar entrega', false));
+      .catch((err) => addToast(`Erro ao registrar entrega: ${err.message}`, false));
   }, [addToast, entregaEditando, fecharModal]);
 
   const excluirEntrega = useCallback((eid) => {
@@ -121,14 +129,18 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'entregue', horarioConclusao: agora }),
     })
-      .then(r => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Erro ao confirmar entrega');
+        return data;
+      })
       .then(updated => {
         updated.horaoPrevisto = updated.horaoPrevisto ? new Date(updated.horaoPrevisto) : null;
         updated.horarioConclusao = updated.horarioConclusao ? new Date(updated.horarioConclusao) : null;
         setEntregas(prev => prev.map(e => e.id === eid ? updated : e));
         addToast(`Entrega ${eid} concluída às ${formatarHora(agora)}!`, true);
       })
-      .catch(() => addToast('Erro ao confirmar entrega', false));
+      .catch((err) => addToast(`Erro ao confirmar entrega: ${err.message}`, false));
   }, [addToast]);
 
   const caminho = entregas.filter(e => e.status === "caminho");
